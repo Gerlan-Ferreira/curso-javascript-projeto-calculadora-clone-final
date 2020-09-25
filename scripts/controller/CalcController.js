@@ -205,7 +205,7 @@ class CalcController {
             se ultimo valor do antigo array tem algum valor se sim add ele no array. Ex: [100,"+"]*/
             this._operation = [result];
 
-            if(last != '') {this._operation.push(last);}
+            if(last != '') this._operation.push(last);
 
         }
 
