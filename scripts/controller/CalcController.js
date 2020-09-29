@@ -218,7 +218,7 @@ class CalcController {
         Nesse caso passo () que é true, pq quero pegar o último operador para depois usar quando o botao de igual clicado duas vezes.*/
         this._lastOperator = this.getLastItem();
         
-        //Se o array tiver menos que 3 valores. Caso o usuario clique no igual antes de ter 3 elementos no array
+        //Caso o usuario clique no botão de igual antes de ter 3 elementos no array.
         if (this._operation.length < 3){
 
             let firstItem = this._operation[0]; //pego o primeiro valor do array já calculado no caso anteriomente getResult()
