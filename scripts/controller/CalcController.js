@@ -2,7 +2,9 @@ class CalcController {
 
     constructor() {
 
-        //o underline informa que o encapsulamento do atributo é private.
+        //o underline informa que o encapsulamento do atributo é privado.
+        this._lastOperator = ''; //variavel usada para guardar o ultimo operador e assim poder usar no botão de igual caso clicado mais de uma vez.
+        this._lastNumber = '';//variavel usada para guardar o ultimo numero e assim poder usar no botão de igual caso clicado mais de uma vez.
         this._operation = [];//array para guardar as operacoes aritméticas
         this._locale = "pt-br";
         this._displayCalcEl = document.querySelector("#display");
@@ -97,23 +99,48 @@ class CalcController {
         this.displayTimeSet = this.currentDateGet.toLocaleTimeString(this._locale);
 
     }
+    /* Método para pegar o ultimo item do array independente se é numero ou operador. 
+    Por padrão inicializo ele como true para que já retorne um operador por conta do método isOperator() se for false
+    claro ele retorna um número.*/
+    getLastItem(isOperator = true){
 
-    setLastNumberToDisplay() {
-
-        let lastNumber;
-        /*Nesse laço eu varro o array ao contrario do ultimo ao primeiro e se ele não for um operador ele será um numero,
-        logo eu adiciono ele na variavel lastNumber e depois paro o for e fora do for eu adiciono esse numero ao display da calculadora.*/
+        let lastItem;
+        /*Nesse laço eu varro o array ao contrario do ultimo até o primeiro e se ele não for um operador ele será um numero,
+        logo eu adiciono ele na variavel lastItem e depois dou um break no for para não ficar em loop.*/
         for (let i = this._operation.length - 1; i >= 0; i--) {
 
-            //Esse !(exclamação) siginifica que estou negando, ou seja, Se NÃO for um número eu pego o valor da posição do array e seto na variavel.
-            if (!this.isOperator(this._operation[i])) {
+            //Se retornar true ele é um operador e se for false é um numero,logo eu pego o valor da posição do array e seto na variavel.
+            if (this.isOperator(this._operation[i]) == isOperator) {
 
-                lastNumber = this._operation[i];
+                lastItem = this._operation[i];
                 break;
+
+            }
+            
+            /*Tratando quando eu tento fazer o join com o eval no metodo getResult() caso o operador não seja encontrado em algum
+            momento para realizar a operação dos valores, eu pego o ultimo operador que usei e passo para o metodo getResult() 
+            calcular correto e não concatenar os numeros. 
+            Por exemplo [10, undefined, 5] em vez de ser [105], após fazer esse tratamento fica [10, "+"(ultimo operador), 5] = [15] */
+            if (!lastItem){
+
+                //If ternário. Se for verdade a condição que ta dentro do parentese o ? significa então eu quero o ultimo operadora e os : siginifica o senão, eu quero o ultimo numero.
+                lastItem = (isOperator) ? this._lastOperator : this._lastNumber;
 
             }
 
         }
+
+        return lastItem; //retornando o mesmo para que seja usado no método setLastNumberTiDisplay() que tbm necessita de usar esse metodo.
+
+    }
+
+    setLastNumberToDisplay() {
+
+        //Usando o método getLastItem() para pegar o ultimo item da operação. 
+        //Nesse caso passo false pq quero pegar o último número e mostrar no display da calculadora,
+        //logo mais abaixo adicionando essa variavel lastNumber ao display.
+        let lastNumber = this.getLastItem(false); 
+        
         //Se não existir nenhum valor entao, o ultimo numero vai ser 0
         if(!lastNumber) lastNumber = 0;
 
@@ -173,6 +200,13 @@ class CalcController {
 
     }
 
+    /*Com o join junto todo o par de operacao que ta no array e transformo em uma string tirando as virgulas.
+    Ex: [10,"+",10], agora ficou "10+10" e o eval() realiza o calculo dessa operação */
+    getResult(){
+
+        return eval(this._operation.join(""));
+    }
+
     //Método para realizar os calculos dos pares de valores.
     calc() {
 
@@ -180,16 +214,38 @@ class CalcController {
         //e descomplete a operação
         let last = '';
 
+        /*Usando o método getLastItem() para pegar o ultimo item da operação. 
+        Nesse caso passo () que é true, pq quero pegar o último operador para depois usar quando o botao de igual clicado duas vezes.*/
+        this._lastOperator = this.getLastItem();
+        
+        //Se o array tiver menos que 3 valores. Caso o usuario clique no igual antes de ter 3 elementos no array
+        if (this._operation.length < 3){
+
+            let firstItem = this._operation[0]; //pego o primeiro valor do array já calculado no caso anteriomente getResult()
+            this._operation = [firstItem, this._lastOperator, this._lastNumber];
+            //Crio um novo array que pega esse valor do firstItem, o ultimo operador e o ultimo numero guardado e realizo o calculo.
+
+        }
+
         //Se o array tiver mais que 3 valores, ou seja, [10 + 10 +] removo o ultimo valor.
         if (this._operation.length > 3){
 
             //Removo o ultimo valor do array e guardo nessa variavel para usá-la de novo na continuacao da operacao
             last = this._operation.pop();
+
+            /*Guardando o resultado da operação e qual operador para assim conseguir 
+            sar o botão de igual mais de uma vez, essa é uma das situações. Nesse caso guardo appenas o operador pq to passando true.*/
+            this._lastNumber = this.getResult();
+   
+
+        }else if (this._operation.length  == 3){
+
+            /*Nesse caso guardo apenas o ultimo numero pq to passando false.*/
+            this._lastNumber = this.getLastItem(false);
         }
 
-        //Com o join junto todo o par de operacao que ta no array e transformo em uma string tirando as virgulas
-        //ex: [10,"+",10], agora ficou "10+10" e o eval() realiza o calculo dessa operação e add esse calculo dentro da variavel
-        let result = eval(this._operation.join(""));
+       //usando o método getResult que já me dá o resultado da operação em seguida adiciono esse cálculo dentro da variavel do resultado.
+        let result = this.getResult();
 
         //Tratando quando o operador for o porcento eu pego os valores e divido por 100 depois salvo no array o resultado.
         if (last == "%") {
@@ -205,7 +261,7 @@ class CalcController {
             se ultimo valor do antigo array tem algum valor se sim add ele no array. Ex: [100,"+"]*/
             this._operation = [result];
 
-            if(last != '') this._operation.push(last);
+            if(last) this._operation.push(last);
 
         }
 
@@ -326,8 +382,9 @@ class CalcController {
 
                 break;
 
+            //BOTÃO DE IGUAL
             case 'igual':
-                this.calc(); //chamando o método de calcular que já dá todo o resultado
+                this.calc(); //chamando o método de calcular que já dá todo o resultado com isso mostro ele em tela
                 break;
 
             case 'ponto':
@@ -382,9 +439,9 @@ class CalcController {
         let buttons = document.querySelectorAll("#buttons > g, #parts > g");
 
         //forEach para percorrer todos os botoes e dentro capturar o evento de click de cada um deles.
-        buttons.forEach((btn, index) => {
+        buttons.forEach((btn, _index) => {
 
-            this.addEventListenerAll(btn, 'click drag', e => {
+            this.addEventListenerAll(btn, 'click drag', _e => {
 
                 let textBtn = btn.className.baseVal.replace("btn-", "");
                 //className captura o name da class e baseVal ele trata o valor dela por conta do svg
@@ -397,7 +454,7 @@ class CalcController {
             /* nessa chamada do método addEventListenerAll estamos fazendo com que caso o
             usuário passe o mouse em cima do botao, ou arraste pra cima ou para baixo ele mude
             o cursor para a mãozinha que é o estilo pointer*/
-            this.addEventListenerAll(btn, "mouseover mouseup mousedown", e => {
+            this.addEventListenerAll(btn, "mouseover mouseup mousedown", _e => {
 
                 btn.style.cursor = "pointer";
 
