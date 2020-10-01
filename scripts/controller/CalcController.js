@@ -119,7 +119,7 @@ class CalcController {
             
             /*Tratando quando eu tento fazer o join com o eval no metodo getResult() caso o operador não seja encontrado em algum
             momento para realizar a operação dos valores, eu pego o ultimo operador que usei e passo para o metodo getResult() 
-            calcular correto e não concatenar os numeros. 
+            calcular correto e não concatenar os numeros. Lembrando que isso só ocorre quando eu fico clicando no igual mais de uma vez.
             Por exemplo [10, undefined, 5] em vez de ser [105], após fazer esse tratamento fica [10, "+"(ultimo operador), 5] = [15] */
             if (!lastItem){
 
@@ -153,6 +153,8 @@ class CalcController {
     clearAll() {
 
         this._operation = [];
+        this._lastNumber = '';
+        this._lastOperator = '';
         
         //Metodo para setar o ultimo numero no display, nesse caso 0
         this.setLastNumberToDisplay();
@@ -232,7 +234,6 @@ class CalcController {
 
             //Removo o ultimo valor do array e guardo nessa variavel para usá-la de novo na continuacao da operacao
             last = this._operation.pop();
-
             /*Guardando o resultado da operação e qual operador para assim conseguir 
             sar o botão de igual mais de uma vez, essa é uma das situações. Nesse caso guardo appenas o operador pq to passando true.*/
             this._lastNumber = this.getResult();
@@ -304,11 +305,7 @@ class CalcController {
                 /*Se for um operador eu estou subsituindo,o ultimo valor do meu array por outro operador. 
                 Por exemplo eu digito um "+" e depois clico no "-" aí troco o "mais" pelo "menos"*/
 
-            } else if (isNaN(value)) {
-
-                console.log('outra coisa');
-
-            } else {
+            }else {
                 //inicializando o array com algum valor no caso o undefined.
                 this.pushOperation(value);
 
@@ -332,7 +329,7 @@ class CalcController {
 
                 //Concatenando o ultimo valor do array com o valor atual.
                 let newValue = this.getLastOperation().toString() + value.toString();
-                this.setLastOperation(parseInt(newValue));//add esse valor concatenado ao array, por exemplo 102 que o usuario pode ter clicado 1,0,2 ou 10, 2.
+                this.setLastOperation(newValue);//add esse valor concatenado ao array, por exemplo 102 que o usuario pode ter clicado 1,0,2 ou 10, 2.
 
                 //Atualizando o display
                 this.setLastNumberToDisplay();
@@ -340,6 +337,30 @@ class CalcController {
             }
 
         }
+
+    }
+    /* Método para tratamento do operador ponto*/
+    addDot(){//dot em inglês significa ponto.
+    
+        let lastOperation = this.getLastOperation(); //guardando a ultima entrada nessa variavel, ou seja guarda um numero ou operador.
+        console.log(lastOperation);
+
+        /*Nesse If eu faço o tratamento para que caso o usaurio digite mais que um ponto em um mesmo numero ele nao permita setar.
+        por exemplo ele ver se o lastoperation é uma string e se dentro dele tem um ponto*/
+        if(typeof lastOperation === 'string' && lastOperation.split('').indexOf('.') > -1) return;
+
+        //Se o usuario clica na primeira vez em um operador ou clicar direto no ponto ele seta o valor 0. no array e no final do laço ele print no display
+        if (this.isOperator(lastOperation) || !lastOperation){
+
+            this.pushOperation('0.');
+
+        }
+        else {
+             //se digitar um numero depois o ponto o sistema concatena o numero com o ponto
+             this.setLastOperation(lastOperation.toString() + '.');
+        }
+
+        this.setLastNumberToDisplay();
 
     }
 
@@ -388,7 +409,7 @@ class CalcController {
                 break;
 
             case 'ponto':
-                this.addOperation('.');
+                this.addDot('.');
 
                 break;
 
